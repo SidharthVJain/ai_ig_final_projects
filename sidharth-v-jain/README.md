@@ -4,6 +4,10 @@
 
 The application is split into a **Streamlit frontend** and a **FastAPI backend**. The backend integrates GitHub, Groq, ChromaDB, sentence-transformers, and CrewAI.
 
+Frontend: https://sidharth-devdigest.streamlit.app/Repository_Explorer
+Backend: https://ai-ig-final-projects-29pe.onrender.com/health
+https://ai-ig-final-projects-29pe.onrender.com/docs
+
 ## Current capabilities
 
 ### 1. GitHub Repository Explorer
@@ -208,87 +212,6 @@ The recommended deployment is **two services from the same GitHub repository**:
 - FastAPI backend on Render.
 - Streamlit frontend on Streamlit Community Cloud.
 
-### A. Deploy the backend to Render
-
-Create a new Render **Web Service** connected to this repository.
-
-| Setting | Value |
-|---|---|
-| Root directory | Repository root (leave blank) |
-| Runtime | Python |
-| Python version | 3.12 (also enforced by the root `.python-version` file) |
-| Build command | `pip install -r requirements.txt` |
-| Start command | `uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT` |
-| Health check path | `/health` |
-
-Set these environment variables in Render:
-
-```env
-GROQ_API_KEY=your_groq_api_key
-GROQ_MODEL=openai/gpt-oss-120b
-GITHUB_TOKEN=your_github_token
-CHROMA_PERSIST_DIR=/var/data/chroma
-CHROMA_COLLECTION_NAME=devdigest_research
-EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-CHUNK_SIZE=1000
-CHUNK_OVERLAP=150
-RAG_TOP_K=5
-MAX_PDF_SIZE_MB=15
-```
-
-`GITHUB_TOKEN` can be omitted if unauthenticated public GitHub API limits are sufficient.
-
-**Persistent storage is required for ChromaDB.** Attach a Render persistent disk to the backend service, mount it at `/var/data`, and use `CHROMA_PERSIST_DIR=/var/data/chroma`. Without a persistent disk, indexed vectors may be lost on redeploy/restart. The embedding model is downloaded/cached at runtime; plan for the initial model download and memory requirements.
-
-### B. Deploy the frontend to Streamlit Community Cloud
-
-1. Create a new Streamlit app and connect the same GitHub repository.
-2. Set the app's main file path to `frontend/app.py`.
-3. Ensure the frontend dependency file is `frontend/requirements.txt` (in the same directory as the app entry point).
-4. In Streamlit app settings, add the backend URL as a secret or environment variable:
-
-```toml
-BACKEND_URL = "https://YOUR-RENDER-SERVICE.onrender.com"
-```
-
-The frontend reads `BACKEND_URL` from the environment. If using Streamlit secrets, expose it as an environment variable in the app configuration, or update `frontend/api_client.py` to read `st.secrets` as a fallback.
-
-The frontend does not need the Groq API key or GitHub token; those belong on the backend only.
-
-### C. Verify the deployment
-
-1. Open `https://YOUR-RENDER-SERVICE.onrender.com/health`.
-2. Open the Streamlit app and confirm the Repository Explorer can search.
-3. Upload a small text-based PDF and confirm it appears in the Research Assistant library.
-4. Ask a question and verify that the answer includes source references.
-5. Generate a briefing with one repository and no PDF first; then test with an indexed paper.
-6. Confirm the ChromaDB index survives a backend redeploy.
-
-## Tests
-
-Install development dependencies:
-
-```bash
-pip install -r requirements-dev.txt
-```
-
-Run the test suite from the repository root:
-
-```bash
-pytest -q
-```
-
-The tests cover API contracts and core GitHub, PDF-processing, RAG, and briefing behavior. External service calls and model-dependent paths should be tested separately with configured credentials.
-
-## Security and operational limitations
-
-- This MVP has no user authentication or per-user data isolation.
-- Indexed research documents are shared by the deployed backend. Do not upload confidential or sensitive papers to a public instance.
-- Protect the API before exposing it to untrusted users. Add authentication/authorization, rate limiting, upload controls, and abuse protections.
-- Keep Groq and GitHub credentials in Render environment variables, not in GitHub or frontend code.
-- ChromaDB must use persistent storage in production.
-- The original PDF files are not stored by the current implementation; the extracted chunks, embeddings, and metadata are stored in ChromaDB.
-- Groq model availability and rate limits depend on the account and selected model. Keep prompts concise and monitor provider limits.
 
 ## Project layout
 
@@ -317,6 +240,3 @@ devdigest/
 └── requirements-dev.txt
 ```
 
-## License
-
-Add a license file before publishing if you intend to permit reuse or contributions. Until then, all rights remain with the repository owner.
