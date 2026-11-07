@@ -5,7 +5,7 @@
 The application is split into a **Streamlit frontend** and a **FastAPI backend**. The backend integrates GitHub, Groq, ChromaDB, sentence-transformers, and CrewAI.
 
 Frontend: https://sidharth-devdigest.streamlit.app/Repository_Explorer
-Backend: https://determine-rpg-politics-carb.trycloudflare.com/docs
+Backend: https://mc-server.tailb45efd.ts.net/devdigest/docs
 
 ## Current capabilities
 
